@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIT GPA Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#14213d; --muted:#5b6780; --line:#d9dfe9;
+  --accent:#d6336c; --accent-ink:#ffffff; --navy:#14213d; --ok:#1b7f5c;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0e1524;--surface:#172036;--ink:#e8ecf5;--muted:#9aa6bf;--line:#2a3550;--accent:#ff5c93;--accent-ink:#1a0a12;--navy:#0a101d;}
+}
+:root[data-theme="dark"]{--bg:#0e1524;--surface:#172036;--ink:#e8ecf5;--muted:#9aa6bf;--line:#2a3550;--accent:#ff5c93;--accent-ink:#1a0a12;--navy:#0a101d;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 56px}
+h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;font-size:clamp(28px,5vw,40px);margin:0 0 4px;letter-spacing:-.02em}
+.tag{font-weight:600;color:var(--accent);margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 24px}
+.grid{display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.row{display:grid;grid-template-columns:1fr 110px 90px 36px;gap:8px;margin-bottom:8px;align-items:center}
+.head{color:var(--muted);font-size:13px;font-weight:500;margin-bottom:6px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-height:42px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.x{background:none;border:1px solid var(--line);border-radius:8px;height:42px;color:var(--muted);cursor:pointer;font-size:18px}
+.x:disabled{opacity:.35;cursor:not-allowed}
+.x:hover:not(:disabled){color:var(--accent);border-color:var(--accent)}
+.bad{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:600;border-radius:8px;padding:10px 16px;cursor:pointer;min-height:42px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.result{background:var(--navy);color:#fff;border:none;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.label{font-size:14px;color:#b8c2d8}
+.gpa{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;font-size:76px;line-height:1;margin:6px 0 2px;letter-spacing:-.03em}
+.gpa small{font-size:22px;font-weight:500;color:#b8c2d8;letter-spacing:0}
+.class{margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,.09);font-weight:600}
+.meta{margin-top:12px;font-size:14px;color:#b8c2d8}
+.err{color:var(--accent);font-size:14px;margin-top:10px;min-height:20px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:500}
+tr.on td{background:color-mix(in srgb,var(--accent) 14%,transparent);font-weight:600}
+.tables{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+@media(max-width:720px){.tables{grid-template-columns:1fr}}
+h2{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-size:18px;margin:0 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SIT GPA calculator</h1>
+  <div class="tag">xxx2151</div>
+  <p class="sub">Fill in at least 5 modules. Every module needs a grade and credit units before you can calculate. GPA is on a 5.0 scale.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="row head"><span>Module name (optional)</span><span>Grade</span><span>Credits</span><span></span></div>
+      <div id="rows"></div>
+      <div class="actions">
+        <button class="btn primary" id="calc" type="button">Calculate GPA</button>
+        <button class="btn" id="add" type="button">Add module</button>
+        <button class="btn" id="reset" type="button">Clear all</button>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+    </div>
+
+    <div class="panel result" aria-live="polite">
+      <div class="label">Your GPA</div>
+      <div class="gpa" id="gpa">–<small> / 5.00</small></div>
+      <div class="class" id="cls">Complete all modules, then press Calculate GPA</div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+
+  <div class="tables">
+    <div class="panel">
+      <h2>Grade points</h2>
+      <table id="gt"><tr><th>Grade</th><th>Points</th></tr></table>
+    </div>
+    <div class="panel">
+      <h2>Degree classification</h2>
+      <table id="ct"><tr><th>GPA</th><th>Classification</th></tr></table>
+    </div>
+  </div>
+</div>
+
+<script>
+const GRADES=[["A+",5],["A",5],["A−",4.5],["B+",4],["B",3.5],["B−",3],["C+",2.5],["C",2],["D+",1.5],["D",1],["F",0]];
+const CLASSES=[[4.5,"4.50 and above","Honours with highest distinction"],[4,"4.00 – 4.49","Honours with distinction"],[3.5,"3.50 – 3.99","Honours with merit"],[3,"3.00 – 3.49","Honours"],[-1,"Below 3.00","Pass"]];
+const $=id=>document.getElementById(id);
+const rowsEl=$("rows");
+
+function classify(g){return CLASSES.find(c=>g>=c[0]);}
+
+const MIN=5;
+function addRow(extra=false){
+  const r=document.createElement("div");r.className="row";
+  const opts='<option value="">Select</option>'+GRADES.map(g=>`<option value="${g[1]}">${g[0]} (${g[1].toFixed(2)})</option>`).join("");
+  r.innerHTML=`<input type="text" placeholder="e.g. Programming" aria-label="Module name">
+    <select aria-label="Grade" required>${opts}</select>
+    <input type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="4" aria-label="Credit units" required>
+    ${extra?'<button class="x" type="button" aria-label="Remove this module">×</button>':'<span></span>'}`;
+  if(extra)r.querySelector(".x").onclick=()=>{r.remove();clearResult();};
+  r.addEventListener("input",e=>e.target.classList.remove("bad"));
+  r.addEventListener("change",e=>e.target.classList.remove("bad"));
+  rowsEl.appendChild(r);
+}
+
+function clearResult(){
+  $("gpa").innerHTML='–<small> / 5.00</small>';$("cls").textContent="Complete all modules, then press Calculate GPA";$("meta").textContent="";
+  $("ct").querySelectorAll("tr.on").forEach(t=>t.classList.remove("on"));
+}
+
+function calc(){
+  let pts=0,cr=0,missing=0,first=null;$("err").textContent="";
+  [...rowsEl.children].forEach(r=>{
+    const s=r.children[1],c=r.children[2],cv=parseFloat(c.value);
+    const gBad=s.value==="",cBad=isNaN(cv)||cv<=0;
+    s.classList.toggle("bad",gBad);c.classList.toggle("bad",cBad);
+    if(gBad||cBad){missing++;if(!first)first=gBad?s:c;return;}
+    pts+=parseFloat(s.value)*cv;cr+=cv;
+  });
+  if(missing){
+    clearResult();
+    $("err").textContent=`${missing} module${missing>1?"s are":" is"} incomplete. Select a grade and enter credit units above 0 for every row.`;
+    first.focus();return;
+  }
+  const gpa=pts/cr,k=classify(Math.round(gpa*100)/100),ct=$("ct");
+  ct.querySelectorAll("tr.on").forEach(t=>t.classList.remove("on"));
+  $("gpa").innerHTML=`${gpa.toFixed(2)}<small> / 5.00</small>`;
+  $("cls").textContent=k[2];
+  $("meta").textContent=`${cr} credit units · ${pts.toFixed(2)} grade points`;
+  ct.querySelectorAll("tr")[CLASSES.indexOf(k)+1].classList.add("on");
+}
+
+$("gt").insertAdjacentHTML("beforeend",GRADES.map(g=>`<tr><td>${g[0]}</td><td>${g[1].toFixed(2)}</td></tr>`).join(""));
+$("ct").insertAdjacentHTML("beforeend",CLASSES.map(c=>`<tr><td>${c[1]}</td><td>${c[2]}</td></tr>`).join(""));
+$("calc").onclick=calc;
+$("add").onclick=()=>{addRow(true);clearResult();rowsEl.lastChild.children[0].focus();};
+$("reset").onclick=()=>{rowsEl.innerHTML="";for(let i=0;i<MIN;i++)addRow();$("err").textContent="";clearResult();};
+for(let i=0;i<MIN;i++)addRow();
+</script>
+</body>
+</html>
